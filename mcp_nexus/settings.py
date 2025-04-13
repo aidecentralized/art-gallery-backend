@@ -22,6 +22,7 @@ PUB_IP = '18.191.100.234'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', f'localhost,127.0.0.1,web,{PUB_IP}').split(',')
 ALLOWED_HOSTS.append('new-nanda-registry.us-east-2.elasticbeanstalk.com')
 ALLOWED_HOSTS.append('nanda-registry.com')
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 EC_2_INSTANCE_IP = None
 

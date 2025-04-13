@@ -1,0 +1,143 @@
+version: "3.8"
+services:
+  web:
+    container_name: art-gallery-instance2-web
+    build: .
+    command: gunicorn mcp_nexus.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./:/app/
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - logs_volume:/app/logs
+    expose:
+      - 8000
+    env_file:
+      - ./.env.instance2
+    depends_on:
+      - db
+      - redis
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+    # Run as root so entrypoint script can set permissions
+    user: root
+
+  db:
+    container_name: art-gallery-instance2-db
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.instance2
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+
+  migrations:
+    container_name: art-gallery-instance2-migrations
+    build: .
+    command: >
+      sh -c 'until curl -s http://web:8000 > /dev/null; do echo "Waiting for web service..."; sleep 5; done; python /app/scripts/run_migrations.py'
+    volumes:
+      - ./:/app/
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - logs_volume:/app/logs
+    env_file:
+      - ./.env.instance2
+    depends_on:
+      - db
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+    # Run as root so entrypoint script can set permissions
+    user: root
+
+  redis:
+    container_name: art-gallery-instance2-redis
+    image: redis:7
+    volumes:
+      - redis_data:/data
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+
+  celery:
+    container_name: art-gallery-instance2-celery
+    build: .
+    command: celery -A mcp_nexus worker -l info
+    volumes:
+      - ./:/app/
+      - logs_volume:/app/logs
+    env_file:
+      - ./.env.instance2
+    depends_on:
+      - web
+      - redis
+      - db
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+    # Run as root so entrypoint script can set permissions
+    user: root
+
+  celery-beat:
+    container_name: art-gallery-instance2-celery-beat
+    build: .
+    command: celery -A mcp_nexus beat -l info --schedule /app/logs/celerybeat-schedule
+    volumes:
+      - ./:/app/
+      - logs_volume:/app/logs
+    env_file:
+      - ./.env.instance2
+    depends_on:
+      - web
+      - redis
+      - db
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+    # Run as root so entrypoint script can set permissions
+    user: root
+
+  nginx:
+    container_name: art-gallery-instance2-nginx
+    image: nginx:1.21
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./nginx/html:/usr/share/nginx/html
+    depends_on:
+      - web
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  logs_volume:
