@@ -105,7 +105,7 @@ class VerificationCompletionSerializer(serializers.Serializer):
         choices=VerificationRequest.VERIFICATION_METHOD_CHOICES,
         required=True
     )
-    verification_proof = serializers.CharField(required=True)
+    verification_proof = serializers.CharField(required=False, allow_blank=True, default="")
 
 class VerificationResultSerializer(serializers.ModelSerializer):
     """Serializer for verification results."""

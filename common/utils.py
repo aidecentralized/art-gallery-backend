@@ -94,9 +94,12 @@ def check_server_health(url):
     Check if an MCP server is healthy and responding.
     """
     try:
+        logger.info(f"Checking server health for URL: {url}")
         response = requests.get(f"{url}", timeout=3)
+        logger.info(f"Health check response: status={response.status_code}, time={response.elapsed.total_seconds()}")
         return response.status_code == 200, response.elapsed.total_seconds()
-    except requests.RequestException:
+    except requests.RequestException as e:
+        logger.error(f"Health check failed with exception: {str(e)}")
         return False, 0
 
 def extract_domain_from_url(url):
