@@ -36,7 +36,23 @@ For instance 1
 `docker-compose -p art-gallery-backend up -d`
 `docker-compose -f docker-compose.instance2.yml -p art-gallery-backend-instance2 up -d`
 
+combined
+
+`docker-compose -p art-gallery-backend up -d --build && docker-compose -f docker-compose.instance2.yml -p art-gallery-backend-instance2 up -d --build`
+
 ## updated scripts to create superuse
 
 `docker-compose -p art-gallery-backend exec web python manage.py createsuperuser`
 `docker-compose -p art-gallery-backend-instance2 exec web python manage.py createsuperuser`
+
+# most up to date
+
+## down scripts
+
+`docker-compose -f docker-compose.yml down -v`
+`docker-compose -f docker-compose.instance2.yml down -v`
+
+## up scripts
+
+`docker-compose -f docker-compose.yml up -d`
+`docker-compose -f docker-compose.instance2.yml -p art-gallery-backend-instance2 up -d --build`

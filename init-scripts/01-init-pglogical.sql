@@ -11,6 +11,7 @@ DECLARE
     db_password text := current_setting('custom.db_password', true);
     is_instance2 text := current_setting('custom.is_instance2', true);
     node_name text;
+    node_exists boolean;
     dsn_string text;
 BEGIN
     -- Determine node name based on instance
@@ -20,17 +21,26 @@ BEGIN
         node_name := 'instance1_node';
     END IF;
     
-    -- Build connection string dynamically
+    -- Check if node exists before attempting to drop it
+    SELECT EXISTS (
+        SELECT 1 FROM pglogical.node WHERE node_name = node_name
+    ) INTO node_exists;
+    
+    -- Only try to drop node if it exists
+    IF node_exists THEN
+        -- Try to drop the node directly - pglogical will handle dropping interfaces internally
+        BEGIN
+            PERFORM pglogical.drop_node(node_name);
+            RAISE NOTICE 'Successfully dropped existing node %', node_name;
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE 'Error dropping node %: %', node_name, SQLERRM;
+        END;
+    END IF;
+    
+    -- Build connection string using format() function
     dsn_string := format('host=%s port=%s dbname=%s user=%s password=%s', 
                          this_host, this_port, db_name, db_user, db_password);
-    
-    -- Check if node exists first and drop if needed
-    BEGIN
-        PERFORM pglogical.drop_node(node_name);
-    EXCEPTION
-        WHEN OTHERS THEN
-            RAISE NOTICE 'Node % does not exist yet or could not be dropped', node_name;
-    END;
     
     -- Create node
     PERFORM pglogical.create_node(

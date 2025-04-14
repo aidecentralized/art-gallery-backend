@@ -36,6 +36,12 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_INITDB_ARGS=--data-checksums
       - PGDATA=/var/lib/postgresql/data/pgdata
+      # PGLogical environment variables
+      - IS_INSTANCE2=false
+      - THIS_HOST=${THIS_HOST}
+      - THIS_PORT=${THIS_PORT}
+      - OTHER_HOST=${OTHER_HOST}
+      - OTHER_PORT=${OTHER_PORT}
     command: >
       sh -c "apt-get update && apt-get install -y postgresql-14-pglogical &&
              docker-entrypoint.sh postgres -c 'shared_preload_libraries=pglogical' -c 'wal_level=logical' -c 'max_replication_slots=4' -c 'max_wal_senders=4'"
@@ -131,6 +137,32 @@ services:
       - ./nginx/html:/usr/share/nginx/html
     depends_on:
       - web
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+
+  pglogical-setup:
+    build: .
+    command: /app/scripts/run_pglogical_setup.sh
+    volumes:
+      - ./:/app/
+    env_file:
+      - ./.env
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=${DB_PORT}
+      - IS_INSTANCE2=false
+      - THIS_HOST=${THIS_HOST}
+      - THIS_PORT=${THIS_PORT}
+      - OTHER_HOST=${OTHER_HOST}
+      - OTHER_PORT=${OTHER_PORT}
+    depends_on:
+      - db
     restart: on-failure
     deploy:
       restart_policy:
