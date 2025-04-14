@@ -146,7 +146,6 @@ class CompleteVerificationView(views.APIView):
     def post(self, request, *args, **kwargs):
         # Log the incoming request
         logger.info(f"Verification completion request received: {request.data}")
-        print(f"Verification completion request received: {request.data}")
         
         # Get the verification request
         verification_id = kwargs.get('verification_id')
