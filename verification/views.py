@@ -524,12 +524,12 @@ class VerificationBadgeView(views.APIView):
                 <rect width="110" height="20" rx="3" fill="#fff"/>
             </mask>
             <g mask="url(#a)">
-                <path fill="#5046e5" d="M0 0h60v20H0z"/>
+                <path fill="#750014" d="M0 0h60v20H0z"/>
                 <path fill="{badge_color}" d="M60 0h50v20H60z"/>
                 <path fill="url(#b)" d="M0 0h110v20H0z"/>
             </g>
             <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
-                <text x="30" y="15" fill="#fff">MCP Nexus</text>
+                <text x="30" y="15" fill="#fff">Nanda</text>
                 <text x="85" y="15" fill="#fff">{badge_text}</text>
             </g>
         </svg>
