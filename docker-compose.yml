@@ -37,13 +37,8 @@ services:
       - POSTGRES_INITDB_ARGS=--data-checksums
       - PGDATA=/var/lib/postgresql/data/pgdata
     command: >
-      sh -c "mkdir -p /var/lib/postgresql/data/pgdata &&
-             apt-get update && apt-get install -y postgresql-14-pglogical &&
-             echo \"shared_preload_libraries = 'pglogical'\" >> /var/lib/postgresql/data/pgdata/postgresql.conf &&
-             echo \"wal_level = logical\" >> /var/lib/postgresql/data/pgdata/postgresql.conf &&
-             echo \"max_replication_slots = 4\" >> /var/lib/postgresql/data/pgdata/postgresql.conf &&
-             echo \"max_wal_senders = 4\" >> /var/lib/postgresql/data/pgdata/postgresql.conf &&
-             exec docker-entrypoint.sh postgres"
+      sh -c "apt-get update && apt-get install -y postgresql-14-pglogical &&
+             docker-entrypoint.sh postgres -c 'shared_preload_libraries=pglogical' -c 'wal_level=logical' -c 'max_replication_slots=4' -c 'max_wal_senders=4'"
     ports:
       - "5432:5432" # Expose port for replication
     restart: on-failure
