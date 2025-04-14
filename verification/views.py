@@ -53,13 +53,18 @@ class RequestVerificationView(generics.CreateAPIView):
         ).first()
 
         if existing_request:
+            # Check if the token has expired and regenerate if needed
+            if existing_request.verification_token_expiry < timezone.now():
+                logger.info(f"Token expired for existing verification request: {existing_request.id}, regenerating")
+                existing_request.generate_verification_token()
+                
             serializer = self.get_serializer(existing_request)
 
             # Build the response with verification instructions
             return Response({
                 **serializer.data,
                 'verification_instructions': (
-                    "You have a request already.To verify your server, you must prove ownership. "
+                    "To verify your server, you must prove ownership. "
                     "Choose one of the following verification methods:\n\n"
                     "1. DNS Verification: Add a TXT record to your domain with the name "
                     f"'_mcp-verification' and value '{existing_request.verification_token}'\n\n"
@@ -170,7 +175,7 @@ class CompleteVerificationView(views.APIView):
             logger.warning(f"Verification token expired at {verification_request.verification_token_expiry}")
             print(f"Verification token expired at {verification_request.verification_token_expiry}")
             return Response(
-                {"error": "Verification token has expired. Please request a new verification."},
+                {"error": "Verification token has expired. Please request a new verification by refreshing this window."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
