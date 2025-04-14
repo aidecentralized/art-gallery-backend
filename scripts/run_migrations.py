@@ -79,17 +79,6 @@ def setup_replication():
         this_node = 'instance2_node' if is_instance2 else 'instance1_node'
         other_node = 'instance1_node' if is_instance2 else 'instance2_node'
         
-        # Try to drop node interface and node if they exist (ignore errors)
-        # Check pglogical version
-        try:
-            cur.execute("SELECT pglogical.alter_node_drop_interface(%s, %s)", (this_node, 'provider_interface'))
-        except psycopg2.Error:
-            print(f"Node interface for {this_node} doesn't exist or couldn't be dropped - continuing")
-            
-        try:
-            cur.execute("SELECT pglogical.drop_node(%s)", (this_node,))
-        except psycopg2.Error:
-            print(f"Node {this_node} doesn't exist or couldn't be dropped - continuing")
         
         # Create provider node
         print(f"Creating provider node: {this_node}")
@@ -106,8 +95,7 @@ def setup_replication():
         cur.execute("""
             SELECT pglogical.replication_set_add_all_tables(
                 set_name := 'default',
-                schema_names := ARRAY['public'],
-                relation_kinds := '{r}'
+                schema_names := ARRAY['public']
             );
         """)
         
