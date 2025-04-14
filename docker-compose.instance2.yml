@@ -1,6 +1,7 @@
 version: "3.8"
 services:
   web:
+    container_name: art-gallery-instance2-web
     build: .
     command: gunicorn mcp_nexus.wsgi:application --bind 0.0.0.0:8000
     volumes:
@@ -11,7 +12,7 @@ services:
     expose:
       - 8000
     env_file:
-      - ./.env
+      - ./.env.instance2
     depends_on:
       - db
       - redis
@@ -24,12 +25,13 @@ services:
     user: root
 
   db:
+    container_name: art-gallery-instance2-db
     image: postgres:14
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - ./init-scripts:/docker-entrypoint-initdb.d
     env_file:
-      - ./.env
+      - ./.env.instance2
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USER}
@@ -37,7 +39,7 @@ services:
       - POSTGRES_INITDB_ARGS=--data-checksums
       - PGDATA=/var/lib/postgresql/data/pgdata
       # PGLogical environment variables
-      - IS_INSTANCE2=false
+      - IS_INSTANCE2=true
       - THIS_HOST=${THIS_HOST}
       - THIS_PORT=${THIS_PORT}
       - OTHER_HOST=${OTHER_HOST}
@@ -46,7 +48,7 @@ services:
       sh -c "apt-get update && apt-get install -y postgresql-14-pglogical &&
              docker-entrypoint.sh postgres -c 'shared_preload_libraries=pglogical' -c 'wal_level=logical' -c 'max_replication_slots=4' -c 'max_wal_senders=4'"
     ports:
-      - "5432:5432" # Expose port for replication
+      - "5433:5432"
     restart: on-failure
     deploy:
       restart_policy:
@@ -54,6 +56,7 @@ services:
         max_attempts: 2
 
   migrations:
+    container_name: art-gallery-instance2-migrations
     build: .
     command: >
       sh -c 'until curl -s http://web:8000 > /dev/null; do echo "Waiting for web service..."; sleep 5; done; python /app/scripts/run_migrations.py'
@@ -63,10 +66,9 @@ services:
       - media_volume:/app/media
       - logs_volume:/app/logs
     env_file:
-      - ./.env
+      - ./.env.instance2
     depends_on:
       - db
-      - web
     restart: on-failure
     deploy:
       restart_policy:
@@ -76,6 +78,7 @@ services:
     user: root
 
   redis:
+    container_name: art-gallery-instance2-redis
     image: redis:7
     volumes:
       - redis_data:/data
@@ -86,13 +89,14 @@ services:
         max_attempts: 2
 
   celery:
+    container_name: art-gallery-instance2-celery
     build: .
     command: celery -A mcp_nexus worker -l info
     volumes:
       - ./:/app/
       - logs_volume:/app/logs
     env_file:
-      - ./.env
+      - ./.env.instance2
     depends_on:
       - web
       - redis
@@ -106,13 +110,14 @@ services:
     user: root
 
   celery-beat:
+    container_name: art-gallery-instance2-celery-beat
     build: .
     command: celery -A mcp_nexus beat -l info --schedule /app/logs/celerybeat-schedule
     volumes:
       - ./:/app/
       - logs_volume:/app/logs
     env_file:
-      - ./.env
+      - ./.env.instance2
     depends_on:
       - web
       - redis
@@ -126,10 +131,11 @@ services:
     user: root
 
   nginx:
+    container_name: art-gallery-instance2-nginx
     image: nginx:1.21
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
       - ./nginx:/etc/nginx/conf.d
       - static_volume:/app/staticfiles
@@ -144,19 +150,20 @@ services:
         max_attempts: 2
 
   pglogical-setup:
+    container_name: art-gallery-instance2-pglogical-setup
     build: .
     command: /app/scripts/run_pglogical_setup.sh
     volumes:
       - ./:/app/
     env_file:
-      - ./.env
+      - ./.env.instance2
     environment:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
       - DB_PORT=${DB_PORT}
-      - IS_INSTANCE2=false
+      - IS_INSTANCE2=true
       - THIS_HOST=${THIS_HOST}
       - THIS_PORT=${THIS_PORT}
       - OTHER_HOST=${OTHER_HOST}
